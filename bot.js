@@ -49,9 +49,6 @@ async function main() {
   const initializeCommandsEnigma = require("./commands/enigma.js");
   initializeCommandsEnigma(bot, connection);
 
-  const initializeCommandsCommand = require("./commands/command.js");
-  initializeCommandsCommand(bot, connection);
-
   bot.on("ready", () => {
     console.log(`Connecté en tant que ${bot.user.tag}!`);
   });
