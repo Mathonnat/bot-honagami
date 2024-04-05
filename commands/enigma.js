@@ -11,17 +11,24 @@ module.exports = async (bot, connection) => {
   let accepterReponses = true;
   let indiceEnvoye = false;
 
-  //  Connexion à la bdd
-  // const dbUrl = new URL(process.env.JAWSDB_URL);
-  // const connection = mysql.createPool({
-  //   host: dbUrl.hostname,
-  //   user: dbUrl.username,
-  //   password: dbUrl.password,
-  //   database: dbUrl.pathname.substr(1),
-  //   waitForConnections: true,
-  //   connectionLimit: 10,
-  //   queueLimit: 0,
-  // });
+  // Assurez-vous que JAWSDB_URL est défini dans vos variables d'environnement
+  if (!process.env.JAWSDB_URL) {
+    throw new Error(
+      "L'URL de la base de données JAWSDB n'est pas définie dans les variables d'environnement."
+    );
+  }
+
+  const dbUrl = new URL(process.env.JAWSDB_URL);
+  const connection = mysql.createPool({
+    host: dbUrl.hostname,
+    user: dbUrl.username,
+    password: dbUrl.password,
+    // Utilisez substr(1) pour enlever le slash initial du pathname pour obtenir le nom de la base de données
+    database: dbUrl.pathname.substr(1),
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
 
   // Les emoji
   const emojis = [
@@ -39,7 +46,9 @@ module.exports = async (bot, connection) => {
   // Détermination de l'ID maximum d'énigme dans la base de données
 
   async function determineMaxEnigmaId() {
-    const [rows] = await connection.query("SELECT MAX(id) AS maxId FROM enigme");
+    const [rows] = await connection.query(
+      "SELECT MAX(id) AS maxId FROM enigme"
+    );
     maxEnigmaId = rows[0]?.maxId || 0;
   }
 
@@ -191,9 +200,10 @@ module.exports = async (bot, connection) => {
     }
 
     // Récupération de l'énigme actuelle de la base de données
-    const [rows] = await connection.query("SELECT answer FROM enigme WHERE id = ?", [
-      currentEnigmaId,
-    ]);
+    const [rows] = await connection.query(
+      "SELECT answer FROM enigme WHERE id = ?",
+      [currentEnigmaId]
+    );
     if (rows.length === 0) {
       return message.reply(
         "Il semble qu'il n'y a pas d'énigme active actuellement."
@@ -226,10 +236,10 @@ module.exports = async (bot, connection) => {
     } else {
       // Mettre à jour le score existant
       const newScore = userScoreRows[0].score + 1;
-      await connection.query("UPDATE user_scores SET score = ? WHERE user_id = ?", [
-        newScore,
-        userId,
-      ]);
+      await connection.query(
+        "UPDATE user_scores SET score = ? WHERE user_id = ?",
+        [newScore, userId]
+      );
     }
   }
 
@@ -296,9 +306,10 @@ module.exports = async (bot, connection) => {
     }
 
     try {
-      const [results] = await connection.query("SELECT * FROM enigme WHERE id = ?", [
-        currentEnigmaId,
-      ]);
+      const [results] = await connection.query(
+        "SELECT * FROM enigme WHERE id = ?",
+        [currentEnigmaId]
+      );
       if (results.length === 0) {
         console.log(`Aucune énigme trouvée pour l'ID: ${currentEnigmaId}`);
         return;
