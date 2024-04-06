@@ -18,17 +18,7 @@ module.exports = async (bot, connection) => {
     );
   }
 
-  const dbUrl = new URL(process.env.JAWSDB_URL);
-  const connection = mysql.createPool({
-    host: dbUrl.hostname,
-    user: dbUrl.username,
-    password: dbUrl.password,
-    // Utilisez substr(1) pour enlever le slash initial du pathname pour obtenir le nom de la base de données
-    database: dbUrl.pathname.substr(1),
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-  });
+
 
   // Les emoji
   const emojis = [
