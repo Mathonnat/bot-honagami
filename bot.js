@@ -27,11 +27,16 @@ async function initializeDatabase() {
       queueLimit: 0,
     };
   } else {
+    // Utilisez les variables d'environnement individuelles si JAWSDB_URL n'est pas défini
     dbConfig = {
-      host: "localhost",
-      user: "root",
-      password: "",
-      database: "bot",
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      port: process.env.DB_PORT, // Assurez-vous d'inclure le port si nécessaire
     };
   }
 
@@ -46,8 +51,8 @@ async function main() {
   const initializeCommands = require("./commands/topenigma.js");
   initializeCommands(bot, connection);
 
-  const initializeCommandsEnigma = require("./commands/enigma.js");
-  initializeCommandsEnigma(bot, connection);
+  // const initializeCommandsEnigma = require("./commands/enigma.js");
+  // initializeCommandsEnigma(bot, connection);
 
   bot.on("ready", () => {
     console.log(`Connecté en tant que ${bot.user.tag}!`);
