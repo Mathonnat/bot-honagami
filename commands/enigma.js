@@ -6,7 +6,7 @@ require("dotenv").config();
 module.exports = async (bot, connection) => {
   let currentEnigmaId = 1;
   let maxEnigmaId = 0;
-  const channelId = "1148182103989698642";
+  const channelId = "1148181712707260416";
   let isEnigmaResolved = false;
   let accepterReponses = true;
   let indiceEnvoye = false;
@@ -42,24 +42,30 @@ module.exports = async (bot, connection) => {
 
   // Gestion des message  s et des commandes
   bot.on("messageCreate", async (message) => {
+    // Vérifie si le message commence par "!enigme" et si l'utilisateur est administrateur
     if (message.content.startsWith("!enigme")) {
-      await handleEnigmaCommand(message);
-    } else if (message.content.startsWith("!reponse")) {
-      await handleResponseCommand(message);
-    } else if (message.content.startsWith("!adminenigme")) {
-      // S'assurer que la commande est exécutée par un administrateur
       if (!message.member.permissions.has("ADMINISTRATOR")) {
         return message.reply(
           "Vous n'avez pas la permission d'utiliser cette commande."
         );
       }
-
-      const id = message.content.split(" ")[1]; // Extraire l'ID de l'énigme de la commande
+      await handleEnigmaCommand(message);
+    } else if (message.content.startsWith("!reponse")) {
+      await handleResponseCommand(message);
+    } else if (message.content.startsWith("!adminenigme")) {
+      // La vérification des permissions est déjà en place ici
+      if (!message.member.permissions.has("ADMINISTRATOR")) {
+        return message.reply(
+          "Vous n'avez pas la permission d'utiliser cette commande."
+        );
+      }
+      const id = message.content.split(" ")[1];
       if (!id || isNaN(id)) {
         return message.reply("Veuillez fournir un ID valide pour l'énigme.");
       }
       await changerEnigmeId(parseInt(id), message);
     }
+
     // Commande adminenigme
 
     if (message.content.startsWith("!adminenigme")) {
@@ -228,17 +234,18 @@ module.exports = async (bot, connection) => {
   async function incrementerEnigmeId() {
     currentEnigmaId = currentEnigmaId < maxEnigmaId ? currentEnigmaId + 1 : 1;
     isEnigmaResolved = false;
+    accepterReponses = false;
+    indiceEnvoye = false;
     console.log("Passage à l'énigme ID:", currentEnigmaId);
     await schedule.gracefulShutdown();
     planifierEnvoiIndices();
-    indiceEnvoye = false;
   }
 
   async function planifierEnvoiIndices() {
     const horaires = [
-      { cron: "* * * * *", indice: 1 }, // Toutes les minutes
-      { cron: "*/1 * * * *", indice: 2 }, // Toutes les minutes (alternative)
-      { cron: "*/1 * * * *", indice: 3 }, // Toutes les minutes (alternative)
+      { cron: "15 17 * * 7", indice: 1 }, // Toutes les minutes
+      { cron: "15 10 * * 1", indice: 2 }, // Toutes les minutes (alternative)
+      { cron: "15 10 * * 2", indice: 3 }, // Toutes les minutes (alternative)
     ];
 
     horaires.forEach((scheduleInfo) => {
@@ -252,18 +259,18 @@ module.exports = async (bot, connection) => {
 
     console.log("Indices programmés pour envoi automatique.");
   }
-
   function planifierProchaineEnigme() {
     schedule.gracefulShutdown().then(() => {
-      const cronPourProchaineEnigme = "33 8 * * 7"; // Exemple de programmation
+      const cronPourProchaineEnigme = "10 17 * * 7"; // Exemple de programmation
       schedule.scheduleJob(cronPourProchaineEnigme, async () => {
         incrementerEnigmeId();
         planifierEnvoiIndices();
       });
     });
   }
+  // Fin d'énigme
   async function verifierEtEnvoyerMessageSiEnigmeNonResolue() {
-    const cronFinEnigme = "32 8 * * 7"; // Exemple de programmation
+    const cronFinEnigme = "15 10 * * 3"; 
     schedule.scheduleJob(cronFinEnigme, async () => {
       if (!isEnigmaResolved) {
         const channel = await bot.channels.fetch(channelId);
@@ -271,7 +278,7 @@ module.exports = async (bot, connection) => {
         channel.send(
           `Malheureusement, personne n'a trouvé la réponse à l'énigme de cette semaine. La réponse était : ${enigme?.answer}. Préparez-vous pour la prochaine énigme !`
         );
-        incrementerEnigmeId();
+        incrementerEnigmeId(); // Assurez-vous que cette ligne est exécutée correctement
       }
     });
   }
