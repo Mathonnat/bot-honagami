@@ -3,7 +3,7 @@ const schedule = require("node-schedule");
 
 module.exports = (bot) => {
   async function planifierMessageVendrediSoir() {
-    schedule.scheduleJob("48 17 * * 1", async () => {
+    schedule.scheduleJob("59 17 * * 1", async () => {
       try {
         const channel = await bot.channels.fetch("1148182103989698642");
 
