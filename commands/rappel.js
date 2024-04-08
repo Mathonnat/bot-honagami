@@ -3,9 +3,9 @@ const schedule = require("node-schedule");
 
 module.exports = (bot) => {
   async function planifierMessageVendrediSoir() {
-    schedule.scheduleJob("25 17 * * 1", async () => {
+    schedule.scheduleJob("33 17 * * 1", async () => {
       try {
-        const channel = await bot.channels.fetch("794959678933172224");
+        const channel = await bot.channels.fetch("1148182103989698642");
 
         // Création de l'embed
         const embed = new EmbedBuilder()
