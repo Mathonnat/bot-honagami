@@ -1,22 +1,30 @@
+const { EmbedBuilder } = require("discord.js");
 const schedule = require("node-schedule");
 
 module.exports = (bot) => {
-  function planifierMessageVendrediSoir() {
-    // Planifie le job pour s'exécuter à 18h30 chaque lundi
-    schedule.scheduleJob("05 21 * * 1", async () => {
+  async function planifierMessageVendrediSoir() {
+    schedule.scheduleJob("50 21 * * 1", async () => {
       try {
         const channel = await bot.channels.fetch("1148182103989698642");
-        // Envoie un message texte classique
-        await channel.send(
-          "Tous les vendredis du mois d'avril accueilleront un among-us à 21h, n'hésitez pas à venir !"
-        );
+
+        // Création de l'embed
+        const embed = new EmbedBuilder()
+          .setTitle("Message Automatique du Vendredi Soir")
+          .setDescription(
+            "C'est vendredi soir ! Voici votre message automatique."
+          )
+          .setColor(0x00ae86) // Vous pouvez personnaliser la couleur
+          .setTimestamp();
+
+        // Envoi de l'embed
+        await channel.send({ embeds: [embed] });
       } catch (error) {
         console.error("Erreur lors de l'envoi du message :", error.toString());
       }
     });
 
     console.log(
-      "Message automatique pour le vendredi soir planifié pour chaque lundi à 18h30."
+      "Message automatique du vendredi soir planifié pour chaque vendredi à 20h00."
     );
   }
 
