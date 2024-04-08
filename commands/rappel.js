@@ -3,7 +3,7 @@ const schedule = require("node-schedule");
 
 module.exports = (bot) => {
   async function planifierMessageVendrediSoir() {
-    schedule.scheduleJob("18 18 * * 1", async () => {
+    schedule.scheduleJob("27 18 * * 1", async () => {
       try {
         const channel = await bot.channels.fetch("1148182103989698642");
 
@@ -13,7 +13,7 @@ module.exports = (bot) => {
           .setDescription(
             "Tous les vendredis du mois d'avril accueilleront un among-us à 21h, n'hésitez pas à venir !"
           )
-          .setColor("#0aee1a")
+          .setColor(0x0aee1a)
           .setTimestamp();
 
         // Envoi de l'embed
