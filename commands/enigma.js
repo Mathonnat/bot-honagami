@@ -22,24 +22,28 @@ module.exports = async (bot, connection) => {
     await determineMaxEnigmaId();
     planifierEnvoiIndices();
     verifierEtEnvoyerMessageSiEnigmeNonResolue();
-}
+  }
 
   async function getActiveEnigma() {
-  const [rows] = await connection.query("SELECT * FROM enigme WHERE id = ?", [currentEnigmaId]);
-  return rows.length > 0 ? rows[0] : null;
-}
+    const [rows] = await connection.query("SELECT * FROM enigme WHERE id = ?", [
+      currentEnigmaId,
+    ]);
+    return rows.length > 0 ? rows[0] : null;
+  }
 
   // Détermination de l'ID maximum d'énigme dans la base de données
 
   async function determineMaxEnigmaId() {
-    const [rows] = await connection.query("SELECT MAX(id) AS maxId FROM enigme");
+    const [rows] = await connection.query(
+      "SELECT MAX(id) AS maxId FROM enigme"
+    );
     maxEnigmaId = rows[0]?.maxId || 0;
-}
+  }
 
   bot.on("ready", async () => {
-  console.log(`Connecté en tant que ${bot.user.tag}!`);
-  await initializeGame();
-});
+    console.log(`Connecté en tant que ${bot.user.tag}!`);
+    await initializeGame();
+  });
 
   // Gestion des message  s et des commandes
   bot.on("messageCreate", async (message) => {
@@ -231,12 +235,11 @@ module.exports = async (bot, connection) => {
     }
   }
 
-
   async function planifierEnvoiIndices() {
     const horaires = [
-      { cron: "50 11 * * 1", indice: 1 }, 
-      { cron: "50 11 * * 2", indice: 2 }, 
-      { cron: "50 11 * * 3", indice: 3 }, 
+      { cron: "50 12 * * 1", indice: 1 },
+      { cron: "50 11 * * 2", indice: 2 },
+      { cron: "50 11 * * 3", indice: 3 },
     ];
 
     horaires.forEach((scheduleInfo) => {
@@ -257,11 +260,11 @@ module.exports = async (bot, connection) => {
     accepterReponses = false;
     indiceEnvoye = false;
     console.log("Passage à l'énigme ID:", currentEnigmaId);
-}
+  }
 
   // Fin d'énigme
   async function verifierEtEnvoyerMessageSiEnigmeNonResolue() {
-    const cronFinEnigme = "50 11 * * 4"; 
+    const cronFinEnigme = "50 11 * * 4";
     schedule.scheduleJob(cronFinEnigme, async () => {
       if (!isEnigmaResolved) {
         const channel = await bot.channels.fetch(channelId);
@@ -277,10 +280,10 @@ module.exports = async (bot, connection) => {
   function planifierProchaineEnigme() {
     const cronPourProchaineEnigme = "49 11 * * 1";
     schedule.scheduleJob(cronPourProchaineEnigme, async () => {
-        await incrementerEnigmeId();
-        planifierEnvoiIndices();
+      await incrementerEnigmeId();
+      planifierEnvoiIndices();
     });
-}
+  }
   // Envoie un indice pour l'énigme en cours
   async function envoyerIndice(numIndice) {
     accepterReponses = true;
