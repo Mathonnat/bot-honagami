@@ -237,7 +237,7 @@ module.exports = async (bot, connection) => {
 
   async function planifierEnvoiIndices() {
     const horaires = [
-      { cron: "50 12 * * 1", indice: 1 },
+      { cron: "58 14 * * 1", indice: 1 },
       { cron: "50 11 * * 2", indice: 2 },
       { cron: "50 11 * * 3", indice: 3 },
     ];
