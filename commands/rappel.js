@@ -3,17 +3,17 @@ const schedule = require("node-schedule");
 
 module.exports = (bot) => {
   async function planifierMessageVendrediSoir() {
-    schedule.scheduleJob("50 21 * * 1", async () => {
+    schedule.scheduleJob("30 19 * * 5", async () => {
       try {
         const channel = await bot.channels.fetch("1148182103989698642");
 
         // Création de l'embed
         const embed = new EmbedBuilder()
-          .setTitle("Message Automatique du Vendredi Soir")
+          .setTitle("Jeu du mois tous les vendredis !")
           .setDescription(
-            "C'est vendredi soir ! Voici votre message automatique."
+            "Tous les vendredis du mois d'avril accueilleront un among-us à 21h, n'hésitez pas à venir !"
           )
-          .setColor(0x00ae86) // Vous pouvez personnaliser la couleur
+          .setColor(0x00ff25)
           .setTimestamp();
 
         // Envoi de l'embed
