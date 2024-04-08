@@ -3,7 +3,7 @@ const schedule = require("node-schedule");
 module.exports = (bot) => {
   function planifierMessageVendrediSoir() {
     // Planifie le job pour s'exécuter à 18h30 chaque lundi
-    schedule.scheduleJob("59 20 * * 1", async () => {
+    schedule.scheduleJob("05 21 * * 1", async () => {
       try {
         const channel = await bot.channels.fetch("1148182103989698642");
         // Envoie un message texte classique
