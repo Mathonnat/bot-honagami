@@ -1,19 +1,19 @@
-const { EmbedBuilder } = require("discord.js");
+const { MessageEmbed } = require("discord.js");
 const schedule = require("node-schedule");
 
 module.exports = (bot) => {
   async function planifierMessageVendrediSoir() {
-    schedule.scheduleJob("10 18 * * 1", async () => {
+    schedule.scheduleJob("18 18 * * 1", async () => {
       try {
         const channel = await bot.channels.fetch("1148182103989698642");
 
         // Création de l'embed
-        const embed = new EmbedBuilder()
+        const embed = new MessageEmbed()
           .setTitle("Jeu du mois tous les vendredis !")
           .setDescription(
             "Tous les vendredis du mois d'avril accueilleront un among-us à 21h, n'hésitez pas à venir !"
           )
-          .setColor(0x0aee1a)
+          .setColor("#0aee1a")
           .setTimestamp();
 
         // Envoi de l'embed
