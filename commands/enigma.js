@@ -6,7 +6,7 @@ require("dotenv").config();
 module.exports = async (bot, connection) => {
   let currentEnigmaId = 1;
   let maxEnigmaId = 0;
-  const channelId = "1148182103989698642";
+  const channelId = "1026513011692810300";
   let isEnigmaResolved = false;
   let accepterReponses = true;
   let indiceEnvoye = false;
@@ -168,6 +168,10 @@ module.exports = async (bot, connection) => {
   }
   // LOGIQUE ENIGME
   async function handleResponseCommand(message) {
+    const responseChannelId = "1027649100436475905";
+    if (message.channel.id !== responseChannelId) {
+      return; // Ignorer le message s'il n'est pas dans le salon autorisé
+    }
     const userResponse = message.content.trim();
     // Vérifier si l'heure actuelle est entre le mercredi à 18h et le samedi à 18h.
     function isWithinResponsePeriod() {
@@ -237,9 +241,9 @@ module.exports = async (bot, connection) => {
   }
   async function planifierEnvoiIndices() {
     // Mercredi, Jeudi et Vendredi à 18h00
-    const joursIndices = [3, 3, 4]; // Mercredi = 3, Jeudi = 4, Vendredi = 5
+    const joursIndices = [3, 4, 5]; // Mercredi = 3, Jeudi = 4, Vendredi = 5
     joursIndices.forEach((jour, index) => {
-      const cronTime = `59 15 * * ${jour}`;
+      const cronTime = `00 18 * * ${jour}`;
       schedule.scheduleJob(cronTime, async () => {
         if (!isEnigmaResolved) {
           await envoyerIndice(index + 1);
@@ -264,7 +268,7 @@ module.exports = async (bot, connection) => {
   // Fin d'énigme
   async function verifierEtEnvoyerMessageSiEnigmeNonResolue() {
     // Samedi à 18h00
-    const cronFinEnigme = "0 18 * * 6"; // 6 pour samedi
+    const cronFinEnigme = "00 18 * * 6"; // 6 pour samedi
     schedule.scheduleJob(cronFinEnigme, async () => {
       if (!isEnigmaResolved) {
         const channel = await bot.channels.fetch(channelId);
@@ -280,7 +284,7 @@ module.exports = async (bot, connection) => {
   }
   // Planification de la prochaine énigme
   function planifierProchaineEnigme() {
-    const cronPourProchaineEnigme = "49 11 * * 1";
+    const cronPourProchaineEnigme = "22 17 * * 3";
     schedule.scheduleJob(cronPourProchaineEnigme, async () => {
       await incrementerEnigmeId();
       planifierEnvoiIndices();
