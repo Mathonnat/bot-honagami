@@ -47,45 +47,34 @@ module.exports = async (bot, connection) => {
 
   // Gestion des message  s et des commandes
   bot.on("messageCreate", async (message) => {
-    // Vérifie si le message commence par "!enigme" et si l'utilisateur est administrateur
-    if (message.content.startsWith("!enigme")) {
-      if (!message.member.permissions.has("ADMINISTRATOR")) {
-        return message.reply(
-          "Vous n'avez pas la permission d'utiliser cette commande."
-        );
-      }
-      await handleEnigmaCommand(message);
-    } else if (message.content.startsWith("!reponse")) {
-      await handleResponseCommand(message);
-    } else if (message.content.startsWith("!adminenigme")) {
-      // La vérification des permissions est déjà en place ici
-      if (!message.member.permissions.has("ADMINISTRATOR")) {
-        return message.reply(
-          "Vous n'avez pas la permission d'utiliser cette commande."
-        );
-      }
-      const id = message.content.split(" ")[1];
-      if (!id || isNaN(id)) {
-        return message.reply("Veuillez fournir un ID valide pour l'énigme.");
-      }
-      await changerEnigmeId(parseInt(id), message);
-    }
+    // Ignorer les messages du bot lui-même pour éviter des boucles infinies
+    if (message.author.bot) return;
 
-    // Commande adminenigme
-
-    if (message.content.startsWith("!adminenigme")) {
-      // Cette commande ne sera accessible qu'à l'administrateur ou à des rôles spécifiques.
-      if (!message.member.permissions.has("ADMINISTRATOR")) {
-        return message.reply(
-          "Vous n'avez pas la permission d'utiliser cette commande."
-        );
+    // Gérer les commandes spécifiques avec préfixe "!"
+    if (message.content.startsWith("!")) {
+      if (message.content.startsWith("!enigme")) {
+        if (!message.member.permissions.has("ADMINISTRATOR")) {
+          return message.reply(
+            "Vous n'avez pas la permission d'utiliser cette commande."
+          );
+        }
+        // Votre logique pour la commande "!enigme"
+        await handleEnigmaCommand(message);
+      } else if (message.content.startsWith("!adminenigme")) {
+        // Votre logique pour la commande "!adminenigme"
+        if (!message.member.permissions.has("ADMINISTRATOR")) {
+          return message.reply(
+            "Vous n'avez pas la permission d'utiliser cette commande."
+          );
+        }
+        const id = message.content.split(" ")[1];
+        if (!id || isNaN(id)) {
+          return message.reply("Veuillez fournir un ID valide pour l'énigme.");
+        }
+        await changerEnigmeId(parseInt(id), message);
       }
-
-      const id = message.content.split(" ")[1]; // Récupère l'ID à partir de la commande
-      if (!id || isNaN(id)) {
-        return message.reply("Veuillez fournir un ID valide pour l'énigme.");
-      }
-      await changerEnigmeId(parseInt(id), message);
+      // Ignorer les autres commandes commençant par "!"
+      return;
     }
 
     // Fonction pour changer l'ID de l'énigme actuelle
@@ -106,7 +95,7 @@ module.exports = async (bot, connection) => {
       );
     }
 
-    // Commande adminenigme
+    await handleResponseCommand(message);
   });
 
   // LOGIQUE ENIGME
@@ -179,11 +168,23 @@ module.exports = async (bot, connection) => {
   }
   // LOGIQUE ENIGME
   async function handleResponseCommand(message) {
-    const userResponse = message.content.slice("!reponse ".length).trim();
+    const userResponse = message.content.trim();
+    // Vérifier si l'heure actuelle est entre le mercredi à 18h et le samedi à 18h.
+    function isWithinResponsePeriod() {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const hour = now.getHours();
+      // Exemple: Accepter les réponses du mercredi (3) à 18h au samedi (6) à 18h
+      const isAfterStart = dayOfWeek > 3 || (dayOfWeek === 3 && hour >= 14);
+      const isBeforeEnd = dayOfWeek < 6 || (dayOfWeek === 6 && hour < 18);
 
-    if (!accepterReponses || !indiceEnvoye) {
+      return isAfterStart && isBeforeEnd;
+    }
+
+    // Si l'énigme est résolue ou si on est hors du délai (samedi 18h passé), refuser la réponse
+    if (isEnigmaResolved || !isWithinResponsePeriod()) {
       return message.reply(
-        "L'énigme actuelle ne peut pas encore être répondue. Attendez le premier indice !"
+        "L'énigme de cette semaine a été résolue ou est terminée. Attendez la prochaine énigme !"
       );
     }
     // Vérifie si une réponse a été fournie
@@ -234,19 +235,16 @@ module.exports = async (bot, connection) => {
       );
     }
   }
-
   async function planifierEnvoiIndices() {
-    const horaires = [
-      { cron: "18 22 * * 1", indice: 1 },
-      { cron: "50 11 * * 2", indice: 2 },
-      { cron: "50 11 * * 3", indice: 3 },
-    ];
-
-    horaires.forEach((scheduleInfo) => {
-      schedule.scheduleJob(scheduleInfo.cron, async () => {
+    // Mercredi, Jeudi et Vendredi à 18h00
+    const joursIndices = [3, 3, 4]; // Mercredi = 3, Jeudi = 4, Vendredi = 5
+    joursIndices.forEach((jour, index) => {
+      const cronTime = `59 15 * * ${jour}`;
+      schedule.scheduleJob(cronTime, async () => {
         if (!isEnigmaResolved) {
-          await envoyerIndice(scheduleInfo.indice);
+          await envoyerIndice(index + 1);
           indiceEnvoye = true;
+          // Assumer que les réponses sont acceptées dès le premier indice envoyé
           accepterReponses = true;
         }
       });
@@ -265,7 +263,8 @@ module.exports = async (bot, connection) => {
 
   // Fin d'énigme
   async function verifierEtEnvoyerMessageSiEnigmeNonResolue() {
-    const cronFinEnigme = "50 11 * * 4";
+    // Samedi à 18h00
+    const cronFinEnigme = "0 18 * * 6"; // 6 pour samedi
     schedule.scheduleJob(cronFinEnigme, async () => {
       if (!isEnigmaResolved) {
         const channel = await bot.channels.fetch(channelId);
@@ -274,6 +273,8 @@ module.exports = async (bot, connection) => {
           `Malheureusement, personne n'a trouvé la réponse à l'énigme de cette semaine. La réponse était : ${enigme?.answer}. Préparez-vous pour la prochaine énigme !`
         );
         incrementerEnigmeId(); // Assurez-vous que cette ligne est exécutée correctement
+        // Marquer l'énigme comme terminée pour cette semaine
+        isEnigmaResolved = true;
       }
     });
   }
