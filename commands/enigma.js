@@ -6,7 +6,7 @@ require("dotenv").config();
 module.exports = async (bot, connection) => {
   let currentEnigmaId = 1;
   let maxEnigmaId = 0;
-  const channelId = "1026513011692810300";
+  const channelId = "1148182103989698642";
   let isEnigmaResolved = false;
   let accepterReponses = true;
   let indiceEnvoye = false;
@@ -26,6 +26,7 @@ module.exports = async (bot, connection) => {
     planifierEnvoiIndices();
     verifierEtEnvoyerMessageSiEnigmeNonResolue();
   }
+
   // Récupère l'état actuel de l'énigme depuis la base de données
   async function fetchCurrentEnigmaState() {
     const [rows] = await connection.query(
@@ -35,16 +36,18 @@ module.exports = async (bot, connection) => {
       return { id: rows[0].id, is_resolved: rows[0].is_resolved };
     }
     // Si aucune énigme n'est marquée comme actuelle, vous pouvez choisir de gérer cela comme une erreur ou de définir un état par défaut
+    await connection.query("UPDATE enigme SET is_current = 1 WHERE id = 1");
     return { id: 1, is_resolved: false };
   }
 
   // Appelée pour mettre à jour l'état de l'énigme comme résolue dans la base de données
   async function setEnigmaResolved(enigmaId) {
-    await connection.query("UPDATE enigme SET is_resolved = 1 WHERE id = ?", [
-      enigmaId,
-    ]);
+    await connection.query(
+      "UPDATE enigme SET is_resolved = 1, is_current = 0 WHERE id = ?",
+      [enigmaId]
+    );
     isEnigmaResolved = true;
-    await incrementerEnigmeId(); // Déplacer cette logique dans cette fonction
+    await incrementerEnigmeId();
   }
 
   async function getActiveEnigma() {
@@ -102,15 +105,19 @@ module.exports = async (bot, connection) => {
 
     // Fonction pour changer l'ID de l'énigme actuelle
     async function changerEnigmeId(newId, message) {
-      // Vérifier si l'ID est dans l'intervalle autorisé
-      const enigmeExists = await connection.query(
+      const [rows] = await connection.query(
         "SELECT 1 FROM enigme WHERE id = ?",
         [newId]
       );
-      if (enigmeExists[0].length === 0) {
+      if (rows.length === 0) {
         return message.reply(`Aucune énigme trouvée avec l'ID ${newId}.`);
       }
-
+      await connection.query(
+        "UPDATE enigme SET is_current = 0 WHERE is_current = 1"
+      );
+      await connection.query("UPDATE enigme SET is_current = 1 WHERE id = ?", [
+        newId,
+      ]);
       currentEnigmaId = newId;
       console.log("Enigme actuelle changée pour ID:", currentEnigmaId);
       message.reply(
