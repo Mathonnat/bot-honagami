@@ -18,10 +18,33 @@ module.exports = async (bot, connection) => {
     "<:emojiTrois:825043664371187722>",
   ];
 
+  // Récupère l'état de l'énigme actuelle depuis la base de données au démarrage du bot
   async function initializeGame() {
-    await determineMaxEnigmaId();
+    const currentEnigmaState = await fetchCurrentEnigmaState();
+    currentEnigmaId = currentEnigmaState.id;
+    isEnigmaResolved = currentEnigmaState.is_resolved;
     planifierEnvoiIndices();
     verifierEtEnvoyerMessageSiEnigmeNonResolue();
+  }
+  // Récupère l'état actuel de l'énigme depuis la base de données
+  async function fetchCurrentEnigmaState() {
+    const [rows] = await connection.query(
+      "SELECT * FROM enigme WHERE is_current = 1"
+    );
+    if (rows.length > 0) {
+      return { id: rows[0].id, is_resolved: rows[0].is_resolved };
+    }
+    // Si aucune énigme n'est marquée comme actuelle, vous pouvez choisir de gérer cela comme une erreur ou de définir un état par défaut
+    return { id: 1, is_resolved: false };
+  }
+
+  // Appelée pour mettre à jour l'état de l'énigme comme résolue dans la base de données
+  async function setEnigmaResolved(enigmaId) {
+    await connection.query("UPDATE enigme SET is_resolved = 1 WHERE id = ?", [
+      enigmaId,
+    ]);
+    isEnigmaResolved = true;
+    await incrementerEnigmeId(); // Déplacer cette logique dans cette fonction
   }
 
   async function getActiveEnigma() {
@@ -243,7 +266,7 @@ module.exports = async (bot, connection) => {
     // Mercredi, Jeudi et Vendredi à 18h00
     const joursIndices = [3, 4, 5]; // Mercredi = 3, Jeudi = 4, Vendredi = 5
     joursIndices.forEach((jour, index) => {
-      const cronTime = `00 18 * * ${jour}`;
+      const cronTime = `41 21 * * ${jour}`;
       schedule.scheduleJob(cronTime, async () => {
         if (!isEnigmaResolved) {
           await envoyerIndice(index + 1);
@@ -257,14 +280,24 @@ module.exports = async (bot, connection) => {
     console.log("Indices programmés pour envoi automatique.");
   }
 
+  // Incrémente l'ID de l'énigme et réinitialise les états après qu'une énigme est résolue
   async function incrementerEnigmeId() {
-    currentEnigmaId = currentEnigmaId < maxEnigmaId ? currentEnigmaId + 1 : 1;
+    await connection.query(
+      "UPDATE enigme SET is_current = 0 WHERE is_current = 1"
+    ); // Réinitialiser l'énigme actuelle
+    const [rows] = await connection.query(
+      "SELECT id FROM enigme WHERE is_resolved = 0 ORDER BY id LIMIT 1"
+    );
+    if (rows.length > 0) {
+      const nextEnigmaId = rows[0].id;
+      await connection.query("UPDATE enigme SET is_current = 1 WHERE id = ?", [
+        nextEnigmaId,
+      ]);
+      currentEnigmaId = nextEnigmaId;
+    }
+    // Réinitialiser les autres variables d'état si nécessaire
     isEnigmaResolved = false;
-    accepterReponses = false;
-    indiceEnvoye = false;
-    console.log("Passage à l'énigme ID:", currentEnigmaId);
   }
-
   // Fin d'énigme
   async function verifierEtEnvoyerMessageSiEnigmeNonResolue() {
     // Samedi à 18h00
