@@ -6,7 +6,7 @@ require("dotenv").config();
 module.exports = async (bot, connection) => {
   let currentEnigmaId = 1;
   let maxEnigmaId = 0;
-  const channelId = "1148182103989698642";
+  const channelId = "1026513011692810300";
   let isEnigmaResolved = false;
   let accepterReponses = true;
   let indiceEnvoye = false;
@@ -47,6 +47,7 @@ module.exports = async (bot, connection) => {
       [enigmaId]
     );
     isEnigmaResolved = true;
+    accepterReponses = false;
     await incrementerEnigmeId();
   }
 
@@ -199,19 +200,29 @@ module.exports = async (bot, connection) => {
   // LOGIQUE ENIGME
   async function handleResponseCommand(message) {
     const responseChannelId = "1027649100436475905";
+    const congratsChannelId = "1026513011692810300";
     if (message.channel.id !== responseChannelId) {
-      return; // Ignorer le message s'il n'est pas dans le salon autorisé
+      return;
     }
+    if (isEnigmaResolved || !accepterReponses) {
+      return message.reply(
+        "L'énigme de cette semaine a été résolue ou n'est pas actuellement ouverte aux réponses. Attendez le prochain indice!"
+      );
+    }
+    // Vérifie si une réponse a été fournie
     const userResponse = message.content.trim();
+    if (!userResponse.length) {
+      return message.reply("Veuillez fournir une réponse à l'énigme.");
+    }
     // Vérifier si l'heure actuelle est entre le mercredi à 18h et le samedi à 18h.
     function isWithinResponsePeriod() {
       const now = new Date();
       const dayOfWeek = now.getDay();
       const hour = now.getHours();
-      // Exemple: Accepter les réponses du mercredi (3) à 18h au samedi (6) à 18h
-      const isAfterStart = dayOfWeek > 3 || (dayOfWeek === 3 && hour >= 14);
-      const isBeforeEnd = dayOfWeek < 6 || (dayOfWeek === 6 && hour < 18);
-
+      // Accepter les réponses du mercredi (3) à 18h au samedi (6) à 18h
+      const isAfterStart = (dayOfWeek > 3) || (dayOfWeek === 3 && hour >= 18);
+      const isBeforeEnd = (dayOfWeek < 6) || (dayOfWeek === 6 && hour < 18);
+    
       return isAfterStart && isBeforeEnd;
     }
 
@@ -220,10 +231,6 @@ module.exports = async (bot, connection) => {
       return message.reply(
         "L'énigme de cette semaine a été résolue ou est terminée. Attendez la prochaine énigme !"
       );
-    }
-    // Vérifie si une réponse a été fournie
-    if (!userResponse.length) {
-      return message.reply("Veuillez fournir une réponse à l'énigme.");
     }
 
     // Récupération de l'énigme actuelle de la base de données
@@ -241,9 +248,16 @@ module.exports = async (bot, connection) => {
 
     if (userResponse.toLowerCase() === answer.toLowerCase()) {
       isEnigmaResolved = true;
+      accepterReponses = false; 
       message.reply("Félicitations! Vous avez trouvé la bonne réponse!");
       await addScore(message.author.id);
-      incrementerEnigmeId();
+      await incrementerEnigmeId();
+
+     // Récupération du salon de félicitations et envoi du message
+      const congratsChannel = await bot.channels.fetch(congratsChannelId);
+      congratsChannel.send(
+        `Félicitations à ${message.author.username} ! La réponse était bien : "${answer}".`
+      );
     } else {
       message.reply("Dommage! Ce n'est pas la bonne réponse. Essayez encore!");
     }
@@ -324,7 +338,7 @@ module.exports = async (bot, connection) => {
   }
   // Planification de la prochaine énigme
   function planifierProchaineEnigme() {
-    const cronPourProchaineEnigme = "22 17 * * 3";
+    const cronPourProchaineEnigme = "10 1 * * 1";
     schedule.scheduleJob(cronPourProchaineEnigme, async () => {
       await incrementerEnigmeId();
       planifierEnvoiIndices();

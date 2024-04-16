@@ -15,7 +15,6 @@ module.exports = (bot) => {
           )
           .setColor(0x00ff25)
           .setTimestamp();
-
         // Envoi de l'embed
         await channel.send({ embeds: [embed] });
       } catch (error) {
