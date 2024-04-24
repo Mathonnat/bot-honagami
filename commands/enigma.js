@@ -182,7 +182,7 @@ module.exports = async (bot, connection) => {
       const collector = message.channel.createMessageCollector({
         filter,
         max: 1,
-        time: 60000,
+        time: 6000,
       });
 
       collector.on("collect", (m) => {
@@ -220,9 +220,9 @@ module.exports = async (bot, connection) => {
       const dayOfWeek = now.getDay();
       const hour = now.getHours();
       // Accepter les réponses du mercredi (3) à 18h au samedi (6) à 18h
-      const isAfterStart = (dayOfWeek > 3) || (dayOfWeek === 3 && hour >= 18);
-      const isBeforeEnd = (dayOfWeek < 6) || (dayOfWeek === 6 && hour < 18);
-    
+      const isAfterStart = dayOfWeek > 1 || (dayOfWeek === 3 && hour >= 18);
+      const isBeforeEnd = dayOfWeek < 6 || (dayOfWeek === 6 && hour < 18);
+
       return isAfterStart && isBeforeEnd;
     }
 
@@ -248,16 +248,18 @@ module.exports = async (bot, connection) => {
 
     if (userResponse.toLowerCase() === answer.toLowerCase()) {
       isEnigmaResolved = true;
-      accepterReponses = false; 
+      accepterReponses = false;
       message.reply("Félicitations! Vous avez trouvé la bonne réponse!");
       await addScore(message.author.id);
       await incrementerEnigmeId();
 
-     // Récupération du salon de félicitations et envoi du message
-      const congratsChannel = await bot.channels.fetch(congratsChannelId);
-      congratsChannel.send(
-        `Félicitations à ${message.author.username} ! La réponse était bien : "${answer}".`
-      );
+      // Planifiez le lancement de la nouvelle énigme pour le prochain lundi
+    planifierProchaineEnigme();
+    
+      // Récupération du salon de félicitations et envoi du message
+  const congratsChannel = await bot.channels.fetch(congratsChannelId);
+    congratsChannel.send(`Félicitations à ${message.author.username} ! La réponse était bien : "${answer}".`);
+      
     } else {
       message.reply("Dommage! Ce n'est pas la bonne réponse. Essayez encore!");
     }
@@ -303,20 +305,13 @@ module.exports = async (bot, connection) => {
 
   // Incrémente l'ID de l'énigme et réinitialise les états après qu'une énigme est résolue
   async function incrementerEnigmeId() {
-    await connection.query(
-      "UPDATE enigme SET is_current = 0 WHERE is_current = 1"
-    ); // Réinitialiser l'énigme actuelle
-    const [rows] = await connection.query(
-      "SELECT id FROM enigme WHERE is_resolved = 0 ORDER BY id LIMIT 1"
-    );
+    await connection.query("UPDATE enigme SET is_current = 0 WHERE is_current = 1"); // Réinitialiser l'énigme actuelle
+    const [rows] = await connection.query("SELECT id FROM enigme WHERE is_resolved = 0 ORDER BY id LIMIT 1");
     if (rows.length > 0) {
-      const nextEnigmaId = rows[0].id;
-      await connection.query("UPDATE enigme SET is_current = 1 WHERE id = ?", [
-        nextEnigmaId,
-      ]);
-      currentEnigmaId = nextEnigmaId;
+        const nextEnigmaId = rows[0].id;
+        await connection.query("UPDATE enigme SET is_current = 1 WHERE id = ?", [nextEnigmaId]);
+        currentEnigmaId = nextEnigmaId;
     }
-    // Réinitialiser les autres variables d'état si nécessaire
     isEnigmaResolved = false;
   }
   // Fin d'énigme
@@ -338,11 +333,18 @@ module.exports = async (bot, connection) => {
   }
   // Planification de la prochaine énigme
   function planifierProchaineEnigme() {
-    const cronPourProchaineEnigme = "10 1 * * 1";
-    schedule.scheduleJob(cronPourProchaineEnigme, async () => {
-      await incrementerEnigmeId();
-      planifierEnvoiIndices();
+    const now = new Date();
+    const nextWednesday = new Date(now);
+    // Calculer le nombre de jours à ajouter pour obtenir le prochain mercredi
+    nextWednesday.setDate(now.getDate() + ((3 + 7 - now.getDay()) % 7 || 7)); 
+    nextWednesday.setHours(55, 17, 0, 0); // Heure fixée à 01:10 AM
+  
+    const cronPourProchaineEnigme = schedule.scheduleJob(nextWednesday, async () => {
+        await incrementerEnigmeId();
+        planifierEnvoiIndices();
     });
+  
+    console.log(`La prochaine énigme sera initialisée le ${nextWednesday}`);
   }
   // Envoie un indice pour l'énigme en cours
   async function envoyerIndice(numIndice) {
