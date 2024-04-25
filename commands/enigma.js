@@ -6,7 +6,7 @@ require("dotenv").config();
 module.exports = async (bot, connection) => {
   let currentEnigmaId = 1;
   let maxEnigmaId = 0;
-  const channelId = "1148181712707260416";
+  const channelId = "1026513011692810300";
   let isEnigmaResolved = false;
   let accepterReponses = true;
   let indiceEnvoye = false;
@@ -48,16 +48,16 @@ module.exports = async (bot, connection) => {
     );
     isEnigmaResolved = true;
     accepterReponses = false;
-    cancelScheduledIndices();  // Annuler les envois d'indices programmés
+    cancelScheduledIndices(); // Annuler les envois d'indices programmés
     await incrementerEnigmeId();
-}
+  }
 
-    // Annuler tous les jobs d'indices programmés
-function cancelScheduledIndices() {
+  // Annuler tous les jobs d'indices programmés
+  function cancelScheduledIndices() {
     schedule.gracefulShutdown().then(() => {
-        console.log("Tous les jobs d'envoi d'indices ont été annulés.");
+      console.log("Tous les jobs d'envoi d'indices ont été annulés.");
     });
-}
+  }
 
   async function getActiveEnigma() {
     const [rows] = await connection.query("SELECT * FROM enigme WHERE id = ?", [
@@ -207,8 +207,8 @@ function cancelScheduledIndices() {
   }
   // LOGIQUE ENIGME
   async function handleResponseCommand(message) {
-    const responseChannelId = "1148182103989698642";
-    const congratsChannelId = "1148181712707260416";
+    const responseChannelId = "1027649100436475905";
+    const congratsChannelId = "1026513011692810300";
     if (message.channel.id !== responseChannelId) {
       return;
     }
@@ -262,12 +262,13 @@ function cancelScheduledIndices() {
       await incrementerEnigmeId();
 
       // Planifiez le lancement de la nouvelle énigme pour le prochain lundi
-    planifierProchaineEnigme();
-    
+      planifierProchaineEnigme();
+
       // Récupération du salon de félicitations et envoi du message
-  const congratsChannel = await bot.channels.fetch(congratsChannelId);
-    congratsChannel.send(`Félicitations à ${message.author.username} ! La réponse était bien : "${answer}".`);
-      
+      const congratsChannel = await bot.channels.fetch(congratsChannelId);
+      congratsChannel.send(
+        `Félicitations à ${message.author.username} ! La réponse était bien : "${answer}".`
+      );
     } else {
       message.reply("Dommage! Ce n'est pas la bonne réponse. Essayez encore!");
     }
@@ -295,63 +296,75 @@ function cancelScheduledIndices() {
   }
   async function planifierEnvoiIndices() {
     if (isEnigmaResolved) {
-        console.log("L'énigme est résolue. Aucun nouvel indice ne sera envoyé jusqu'à la prochaine énigme.");
-        return;
+      console.log(
+        "L'énigme est résolue. Aucun nouvel indice ne sera envoyé jusqu'à la prochaine énigme."
+      );
+      return;
     }
 
     // Mercredi, Jeudi et Vendredi à 18h00
     const joursIndices = [3, 4, 5]; // Mercredi = 3, Jeudi = 4, Vendredi = 5
     joursIndices.forEach((jour, index) => {
-        const cronTime = `00 18 * * ${jour}`;
-        schedule.scheduleJob(cronTime, async () => {
-            if (!isEnigmaResolved) {
-                await envoyerIndice(index + 1);
-                indiceEnvoye = true;
-                // Assumer que les réponses sont acceptées dès le premier indice envoyé
-                accepterReponses = true;
-            }
-        });
+      const cronTime = `00 18 * * ${jour}`;
+      schedule.scheduleJob(cronTime, async () => {
+        if (!isEnigmaResolved) {
+          await envoyerIndice(index + 1);
+          indiceEnvoye = true;
+          // Assumer que les réponses sont acceptées dès le premier indice envoyé
+          accepterReponses = true;
+        }
+      });
     });
 
     console.log("Indices programmés pour envoi automatique.");
-}
+  }
 
   // Incrémente l'ID de l'énigme et réinitialise les états après qu'une énigme est résolue
   async function incrementerEnigmeId() {
-    await connection.query("UPDATE enigme SET is_current = 0 WHERE is_current = 1"); // Réinitialiser l'énigme actuelle
-    const [rows] = await connection.query("SELECT id FROM enigme WHERE is_resolved = 0 ORDER BY id LIMIT 1");
+    await connection.query(
+      "UPDATE enigme SET is_current = 0 WHERE is_current = 1"
+    ); // Réinitialiser l'énigme actuelle
+    const [rows] = await connection.query(
+      "SELECT id FROM enigme WHERE is_resolved = 0 ORDER BY id LIMIT 1"
+    );
     if (rows.length > 0) {
-        const nextEnigmaId = rows[0].id;
-        await connection.query("UPDATE enigme SET is_current = 1 WHERE id = ?", [nextEnigmaId]);
-        currentEnigmaId = nextEnigmaId;
+      const nextEnigmaId = rows[0].id;
+      await connection.query("UPDATE enigme SET is_current = 1 WHERE id = ?", [
+        nextEnigmaId,
+      ]);
+      currentEnigmaId = nextEnigmaId;
     } else {
-        // S'il n'y a pas de prochaine énigme prête, définir un état qui empêche toute interaction
-        accepterReponses = false;
+      // S'il n'y a pas de prochaine énigme prête, définir un état qui empêche toute interaction
+      accepterReponses = false;
     }
     isEnigmaResolved = false;
     planifierProchaineEnigme();
-}
+  }
   // Fin d'énigme
   async function verifierEtEnvoyerMessageSiEnigmeNonResolue() {
-// Samedi à 18h00
-const cronFinEnigme = "00 18 * * 6"; // 6 pour samedi
-schedule.scheduleJob(cronFinEnigme, async () => {
-  if (!isEnigmaResolved) {  // Vérifier si l'énigme n'est pas résolue
-    const channel = await bot.channels.fetch(channelId);
-    const enigme = await getActiveEnigma();
-    if (enigme) {  // S'assurer qu'il y a une énigme active à traiter
-      channel.send(
-        `Malheureusement, personne n'a trouvé la réponse à l'énigme de cette semaine. La réponse était : ${enigme.answer}. Préparez-vous pour la prochaine énigme !`
-      );
-    } else {
-      console.log("Aucune énigme active trouvée lors de la vérification de fin de semaine.");
-    }
-    incrementerEnigmeId(); // Préparer la prochaine énigme
-    isEnigmaResolved = true; // Marquer l'énigme comme terminée pour cette semaine
-  } else {
-    console.log("L'énigme de cette semaine a déjà été résolue.");
-  }
-});
+    // Samedi à 18h00
+    const cronFinEnigme = "00 18 * * 6"; // 6 pour samedi
+    schedule.scheduleJob(cronFinEnigme, async () => {
+      if (!isEnigmaResolved) {
+        // Vérifier si l'énigme n'est pas résolue
+        const channel = await bot.channels.fetch(channelId);
+        const enigme = await getActiveEnigma();
+        if (enigme) {
+          // S'assurer qu'il y a une énigme active à traiter
+          channel.send(
+            `Malheureusement, personne n'a trouvé la réponse à l'énigme de cette semaine. La réponse était : ${enigme.answer}. Préparez-vous pour la prochaine énigme !`
+          );
+        } else {
+          console.log(
+            "Aucune énigme active trouvée lors de la vérification de fin de semaine."
+          );
+        }
+        incrementerEnigmeId(); // Préparer la prochaine énigme
+        isEnigmaResolved = true; // Marquer l'énigme comme terminée pour cette semaine
+      } else {
+        console.log("L'énigme de cette semaine a déjà été résolue.");
+      }
+    });
   }
   // Planification de la prochaine énigme
   function planifierProchaineEnigme() {
@@ -361,11 +374,13 @@ schedule.scheduleJob(cronFinEnigme, async () => {
     nextMonday.setHours(0, 0, 0, 0); // Heure fixée à minuit
 
     schedule.scheduleJob(nextMonday, async () => {
-        await initializeGame(); // Réinitialiser et démarrer une nouvelle énigme
+      await initializeGame(); // Réinitialiser et démarrer une nouvelle énigme
     });
 
-    console.log(`La prochaine énigme sera initialisée le ${nextMonday.toISOString()}`);
-}
+    console.log(
+      `La prochaine énigme sera initialisée le ${nextMonday.toISOString()}`
+    );
+  }
   // Envoie un indice pour l'énigme en cours
   async function envoyerIndice(numIndice) {
     accepterReponses = true;
