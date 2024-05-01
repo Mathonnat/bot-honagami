@@ -43,14 +43,14 @@ module.exports = async (bot, connection) => {
   // Appelée pour mettre à jour l'état de l'énigme comme résolue dans la base de données
   async function setEnigmaResolved(enigmaId) {
     await connection.query(
-      "UPDATE enigme SET is_resolved = 1, is_current = 0 WHERE id = ?",
-      [enigmaId]
+        "UPDATE enigme SET is_resolved = 1, is_current = 0 WHERE id = ?",
+        [enigmaId]
     );
     isEnigmaResolved = true;
     accepterReponses = false;
-    cancelScheduledIndices(); // Annuler les envois d'indices programmés
+    cancelScheduledIndices(); // Assurez-vous que cela est bien appelé ici
     await incrementerEnigmeId();
-  }
+}
 
   // Annuler tous les jobs d'indices programmés
   function cancelScheduledIndices() {
@@ -383,12 +383,14 @@ module.exports = async (bot, connection) => {
   }
   // Envoie un indice pour l'énigme en cours
   async function envoyerIndice(numIndice) {
-    accepterReponses = true;
-
+    if (isEnigmaResolved) {
+        console.log("L'énigme a été résolue. Aucun indice supplémentaire ne sera envoyé.");
+        return; 
+    }
     const enigme = await getActiveEnigma();
     if (!enigme) {
-      console.log("Aucune énigme active trouvée.");
-      return;
+        console.log("Aucune énigme active trouvée.");
+        return;
     }
 
     try {
