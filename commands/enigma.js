@@ -6,7 +6,7 @@ require("dotenv").config();
 module.exports = async (bot, connection) => {
   let currentEnigmaId = 1;
   let maxEnigmaId = 0;
-  const channelId = "1026513011692810300";
+  const channelId = "1148181712707260416";
   let isEnigmaResolved = false;
   let accepterReponses = true;
   let indiceEnvoye = false;
@@ -43,14 +43,14 @@ module.exports = async (bot, connection) => {
   // Appelée pour mettre à jour l'état de l'énigme comme résolue dans la base de données
   async function setEnigmaResolved(enigmaId) {
     await connection.query(
-        "UPDATE enigme SET is_resolved = 1, is_current = 0 WHERE id = ?",
-        [enigmaId]
+      "UPDATE enigme SET is_resolved = 1, is_current = 0 WHERE id = ?",
+      [enigmaId]
     );
     isEnigmaResolved = true;
     accepterReponses = false;
     cancelScheduledIndices(); // Assurez-vous que cela est bien appelé ici
     await incrementerEnigmeId();
-}
+  }
 
   // Annuler tous les jobs d'indices programmés
   function cancelScheduledIndices() {
@@ -207,8 +207,8 @@ module.exports = async (bot, connection) => {
   }
   // LOGIQUE ENIGME
   async function handleResponseCommand(message) {
-    const responseChannelId = "1027649100436475905";
-    const congratsChannelId = "1026513011692810300";
+    const responseChannelId = "1148182103989698642";
+    const congratsChannelId = "1148181712707260416";
     if (message.channel.id !== responseChannelId) {
       return;
     }
@@ -305,7 +305,7 @@ module.exports = async (bot, connection) => {
     // Mercredi, Jeudi et Vendredi à 18h00
     const joursIndices = [3, 4, 5]; // Mercredi = 3, Jeudi = 4, Vendredi = 5
     joursIndices.forEach((jour, index) => {
-      const cronTime = `00 18 * * ${jour}`;
+      const cronTime = `02 16 * * ${jour}`;
       schedule.scheduleJob(cronTime, async () => {
         if (!isEnigmaResolved) {
           await envoyerIndice(index + 1);
@@ -384,16 +384,19 @@ module.exports = async (bot, connection) => {
   // Envoie un indice pour l'énigme en cours
   async function envoyerIndice(numIndice) {
     if (isEnigmaResolved) {
-        console.log("L'énigme a été résolue. Aucun indice supplémentaire ne sera envoyé.");
-        return; 
-    }
-    const enigme = await getActiveEnigma();
-    if (!enigme) {
-        console.log("Aucune énigme active trouvée.");
-        return;
+      console.log(
+        "L'énigme a été résolue. Aucun indice supplémentaire ne sera envoyé."
+      );
+      return;
     }
 
     try {
+      const enigme = await getActiveEnigma();
+      if (!enigme) {
+        console.log("Aucune énigme active trouvée.");
+        return;
+      }
+
       const [results] = await connection.query(
         "SELECT * FROM enigme WHERE id = ?",
         [currentEnigmaId]
@@ -402,11 +405,11 @@ module.exports = async (bot, connection) => {
         console.log(`Aucune énigme trouvée pour l'ID: ${currentEnigmaId}`);
         return;
       }
+
       // Définition de la clé d'indice en fonction de numIndice
       const indiceKeys = ["one", "two", "three"];
       const indiceKey = indiceKeys[numIndice - 1];
       const emoji = emojis[numIndice - 1];
-      const enigme = results[0];
       const channel = await bot.channels.fetch(channelId);
 
       // ID du rôle que vous souhaitez mentionner
