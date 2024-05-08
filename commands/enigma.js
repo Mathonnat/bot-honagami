@@ -6,7 +6,7 @@ require("dotenv").config();
 module.exports = async (bot, connection) => {
   let currentEnigmaId = 1;
   let maxEnigmaId = 0;
-  const channelId = "1148181712707260416";
+  const channelId = "1026513011692810300";
   let isEnigmaResolved = false;
   let accepterReponses = true;
   let indiceEnvoye = false;
@@ -207,8 +207,8 @@ module.exports = async (bot, connection) => {
   }
   // LOGIQUE ENIGME
   async function handleResponseCommand(message) {
-    const responseChannelId = "1148182103989698642";
-    const congratsChannelId = "1148181712707260416";
+    const responseChannelId = "1027649100436475905";
+    const congratsChannelId = "1026513011692810300";
     if (message.channel.id !== responseChannelId) {
       return;
     }
