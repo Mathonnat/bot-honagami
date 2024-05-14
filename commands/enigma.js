@@ -48,7 +48,7 @@ module.exports = async (bot, connection) => {
     );
     isEnigmaResolved = true;
     accepterReponses = false;
-    cancelScheduledIndices(); // Assurez-vous que cela est bien appelé ici
+    cancelScheduledIndices();
     await incrementerEnigmeId();
   }
 
@@ -67,7 +67,6 @@ module.exports = async (bot, connection) => {
   }
 
   // Détermination de l'ID maximum d'énigme dans la base de données
-
   async function determineMaxEnigmaId() {
     const [rows] = await connection.query(
       "SELECT MAX(id) AS maxId FROM enigme"
@@ -80,7 +79,7 @@ module.exports = async (bot, connection) => {
     await initializeGame();
   });
 
-  // Gestion des message  s et des commandes
+  // Gestion des messages et des commandes
   bot.on("messageCreate", async (message) => {
     // Ignorer les messages du bot lui-même pour éviter des boucles infinies
     if (message.author.bot) return;
@@ -112,30 +111,30 @@ module.exports = async (bot, connection) => {
       return;
     }
 
-    // Fonction pour changer l'ID de l'énigme actuelle
-    async function changerEnigmeId(newId, message) {
-      const [rows] = await connection.query(
-        "SELECT 1 FROM enigme WHERE id = ?",
-        [newId]
-      );
-      if (rows.length === 0) {
-        return message.reply(`Aucune énigme trouvée avec l'ID ${newId}.`);
-      }
-      await connection.query(
-        "UPDATE enigme SET is_current = 0 WHERE is_current = 1"
-      );
-      await connection.query("UPDATE enigme SET is_current = 1 WHERE id = ?", [
-        newId,
-      ]);
-      currentEnigmaId = newId;
-      console.log("Enigme actuelle changée pour ID:", currentEnigmaId);
-      message.reply(
-        `L'énigme actuelle a été changée pour l'ID ${currentEnigmaId}. La prochaine énigme sera envoyée selon le programme.`
-      );
-    }
-
     await handleResponseCommand(message);
   });
+
+  // Fonction pour changer l'ID de l'énigme actuelle
+  async function changerEnigmeId(newId, message) {
+    const [rows] = await connection.query(
+      "SELECT 1 FROM enigme WHERE id = ?",
+      [newId]
+    );
+    if (rows.length === 0) {
+      return message.reply(`Aucune énigme trouvée avec l'ID ${newId}.`);
+    }
+    await connection.query(
+      "UPDATE enigme SET is_current = 0 WHERE is_current = 1"
+    );
+    await connection.query("UPDATE enigme SET is_current = 1 WHERE id = ?", [
+      newId,
+    ]);
+    currentEnigmaId = newId;
+    console.log("Enigme actuelle changée pour ID:", currentEnigmaId);
+    message.reply(
+      `L'énigme actuelle a été changée pour l'ID ${currentEnigmaId}. La prochaine énigme sera envoyée selon le programme.`
+    );
+  }
 
   // LOGIQUE ENIGME
   // Ajout d'une nouvelle énigme
@@ -205,6 +204,7 @@ module.exports = async (bot, connection) => {
       });
     });
   }
+
   // LOGIQUE ENIGME
   async function handleResponseCommand(message) {
     const responseChannelId = "1027649100436475905";
@@ -259,6 +259,7 @@ module.exports = async (bot, connection) => {
       accepterReponses = false;
       message.reply("Félicitations! Vous avez trouvé la bonne réponse!");
       await addScore(message.author.id);
+      cancelScheduledIndices(); // Annuler l'envoi des indices restants
       await incrementerEnigmeId();
 
       // Planifiez le lancement de la nouvelle énigme pour le prochain lundi
@@ -273,6 +274,7 @@ module.exports = async (bot, connection) => {
       message.reply("Dommage! Ce n'est pas la bonne réponse. Essayez encore!");
     }
   }
+
   // Fonction pour ajouter un point à l'utilisateur
   async function addScore(userId) {
     const [userScoreRows] = await connection.query(
@@ -294,6 +296,7 @@ module.exports = async (bot, connection) => {
       );
     }
   }
+
   async function planifierEnvoiIndices() {
     if (isEnigmaResolved) {
       console.log(
@@ -340,6 +343,7 @@ module.exports = async (bot, connection) => {
     isEnigmaResolved = false;
     planifierProchaineEnigme();
   }
+
   // Fin d'énigme
   async function verifierEtEnvoyerMessageSiEnigmeNonResolue() {
     // Samedi à 18h00
@@ -366,6 +370,7 @@ module.exports = async (bot, connection) => {
       }
     });
   }
+
   // Planification de la prochaine énigme
   function planifierProchaineEnigme() {
     const now = new Date();
@@ -381,6 +386,7 @@ module.exports = async (bot, connection) => {
       `La prochaine énigme sera initialisée le ${nextMonday.toISOString()}`
     );
   }
+
   // Envoie un indice pour l'énigme en cours
   async function envoyerIndice(numIndice) {
     if (isEnigmaResolved) {

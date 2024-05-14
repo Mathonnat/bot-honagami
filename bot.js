@@ -56,9 +56,6 @@ async function main() {
 
   const initializeCommandsRappel = require("./commands/rappel.js");
   initializeCommandsRappel(bot, connection);
-  
-  // const initializeExperienceXp = require("./expérience/xp.js");
-  // initializeExperienceXp(bot, connection);
 
   bot.on("ready", () => {
     console.log(`Connecté en tant que ${bot.user.tag}!`);
