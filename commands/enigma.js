@@ -308,7 +308,7 @@ module.exports = async (bot, connection) => {
     // Mercredi, Jeudi et Vendredi à 18h00
     const joursIndices = [3, 4, 5]; // Mercredi = 3, Jeudi = 4, Vendredi = 5
     joursIndices.forEach((jour, index) => {
-      const cronTime = `00 18 * * ${jour}`;
+      const cronTime = `15 18 * * ${jour}`;
       schedule.scheduleJob(cronTime, async () => {
         if (!isEnigmaResolved) {
           await envoyerIndice(index + 1);
